@@ -1,5 +1,10 @@
 ---
 title: "Illinois HS XC Version 1"
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
 author: "Me"
 date: "4/26/2020"
 output: html_document
@@ -8,7 +13,7 @@ output: html_document
 ##Comparing Performance By Grade In Girls' High School Cross-Country
 
 ```{r, include=FALSE}
-setwd("C:/Users/maure/OneDrive/Desktop/Maureen/STAT 485")
+setwd("C:/Users/maure/OneDrive/Desktop/Maureen/R Projects/ILHSXC")
 ```
 
 ### Justification
