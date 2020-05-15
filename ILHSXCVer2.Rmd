@@ -1,0 +1,217 @@
+---
+title: "Illinois HS XC Refined"
+author: "Me"
+date: "4/26/2020"
+output: html_document
+---
+##Comparing Performance By Grade In Girls' High School Cross-Country
+
+```{r, include=FALSE}
+setwd("C:/Users/maure/OneDrive/Desktop/Maureen/R Projects/ILHSXC")
+```
+
+### Justification
+  As a long-time competitive distance runner, I have always been interested in running related statistics.  This proejct will analyze the Illinois Girls' Cross-Country State Meet results focusing on the average place and time of the participants competing at each grade level.
+
+#### Why Illinois
+  I chose Illinois because I grew up there and so am familiar with the state meet structure, course, and environment.  
+  Also, I know that the Illinois State High School Association (www.ihsa.org) maintains historical data and past results, making it easy to find the necessary data for this project.
+  
+#### Why Girls
+  I chose to focus on girls, because usually male runners show a more typical pattern of improvement and gradually become faster as they age from freshman to seniors.  Female runners are not so straight-forward and it is not unusual for a stellar freshman athlete to become a mediocre senior.  This occurs for a variety of reasons including onset of puberty, weight gain, loss of interest, and injury.
+  By taking an analytical look at the data, I hope to see if there truly are significant differences in performance as the girls age.
+	
+### Data
+  For this project, I will be looking at the Illinois High School Association Girls' State Cross-Country Meet results from 2007-2018.
+  I obtained my data from the Illinois High School Association's website (www.ihsa.org), which has results of the state meet going back to the mid-90s.  I copied the results from each year and pasted each one into a text document.  I then saved all of those files to one .csv file. 
+  Prior to 2007, schools competing in cross-country were divided into two classes, A or AA, depending on enrollment size.  Starting in 2007, schools were divided into three classes, and AAA was added.  I will focus on the years after 2007, to maintain consistency in the data that I am looking at. 
+  Another factor that could have affected this study is that fact that the distance of the girls' race increased from 2.5 miles to 3.0 miles in 2002.  Fortunately, this will not cause an issue since I will not be looking at data prior to the switch in distance.
+  Finally, in this version of the project, I will also be focusing only on the 3A division.  This is the biggest division out of the three competing classes and I feel it would be most representative of the population.  This is because smaller schools often don't have as much competition for varsity slots on their teams.  So, the results could be skewed because at a small school, an athlete might make the varsity team and earn the opportunity to compete at state, solely because they joined the team and not because of their athletic ability.  In the future, I would like to pull in the data from the the other two divisions.
+  
+#### Variables
+  For this project, I decided to look at place and time of the participants at each grade level.
+  I chose to focus on place because I feel that is a good consistent measure of performance.  Time is also relevant.  However, time can be extraordinarily variable in cross-country due to changing course conditions and weather.  
+
+### Demonstration
+First, I will read in my data.  This .csv file contains the results from 2007-2018.  
+
+```{r}
+XCData <- read.table("XCData.csv",comm="#",header=TRUE,sep=",")
+```
+
+I now need to change the format of my times, so I can work with them.  Here I convert the times to a character vector, and then to a decimal:
+
+```{r}
+XCData[,3] <- as.character(XCData[,3])
+
+XCData[,3] <- sapply(strsplit(XCData[,3],":"),
+        function(x) {
+             x <- as.numeric(x)
+             x[1]+x[2]/60
+         }
+  )
+  
+```
+
+Now I will take a look at a summary of my data:
+
+```{r}
+summary(XCData)
+```
+
+I see that there are multiple factors for each grade level.  So, I will go ahead and combine those levels and put them in the traditional order of Freshman, Sophomore, Junior, and Senior.  I will also change year into factor and then I will take another look at the summary to make sure everything is cleaned up properly:
+
+```{r}
+levels(XCData$Grade)<- c("Fr", "Fr", "Fr", "Jr", "Jr", "Jr", "Jr", "So", "So", "So", "So", "Sr", "Sr", "Sr")
+XCData$Grade <- factor(XCData$Grade, levels = c("Fr", "So", "Jr", "Sr"))
+XCData$Year <- as.factor(XCData$Year)
+summary(XCData)
+```
+
+The average place  by grade is:
+
+```{r}
+placeaverage = aggregate(x = XCData[, 1], by = list(XCData$Grade), FUN = mean, na.rm = TRUE)
+placeaverage
+```
+
+Just looking at numbers, it looks like Sophomores had the overall best average place, followed by Seniors, then Juniors, and finally Freshman.  However, we do not know if these differences are significant.
+Right now, I would like to create a boxplot with error bars for this data.  I already have the average places, so now I will add standard error to that information and change the names of my columns:
+
+```{r}
+placeaverage2 <- cbind(placeaverage, aggregate(XCData[,1], by = list(XCData$Grade), function(x) (sd(x, na.rm = TRUE)/((length(x) - sum(is.na(x)))^0.5))))[,-3]
+names(placeaverage2) <- c("Grade", "AvePlace", "PlaceSE")
+placeaverage2
+```
+
+And now I can create my plot:
+
+```{r, include=FALSE}
+library(ggplot2)
+```
+
+```{r}
+placebarplot<-ggplot(data=placeaverage2, aes(x=Grade, y=AvePlace)) +
+  geom_bar(stat="identity", aes(fill = Grade)) +   geom_errorbar(aes(ymin=AvePlace-PlaceSE, ymax=AvePlace+PlaceSE)) + labs(title="Average Place By Grade")
+placebarplot
+```
+
+
+You can see that these are fairly similar and there may not be any statistically significant difference between these groups.  I will take a quick look at a box plot to see if there are any big differences there:
+
+```{r}
+placebox <- ggplot(XCData, aes(x=Grade, y=Place)) + 
+  geom_boxplot(outlier.colour="red", outlier.shape=8, aes(fill = Grade)) +
+  geom_jitter(alpha = .1)
+placebox
+```
+
+
+
+These are very similar as well.  You can see a visual difference in the median performance for freshman but it is hard to differentiate the other grades. 
+Next, lets look at average time:
+
+```{r}
+timeaverage = aggregate(x = XCData[, 3], by = list(XCData$Grade), FUN = mean, na.rm = TRUE)
+timeaverage
+```
+
+The average times follow a similar pattern to places: Sophomores ran the fastest, followed by Seniors, Juniors, and then Freshmen.
+
+The mean and standard deviations are as follows:
+
+```{r}
+timeaverage2 <- cbind(timeaverage, aggregate(XCData[,3], by = list(XCData$Grade), function(x) (sd(x, na.rm = TRUE)/((length(x) - sum(is.na(x)))^0.5))))[,-3]
+names(timeaverage2) <- c("Grade", "AveTime", "TimeSE") #This changes the names of the columns
+timeaverage2
+```
+
+With corresponding bar chart with error bars:
+
+```{r}
+timebarplot<-ggplot(data=timeaverage2, aes(x=Grade, y=AveTime)) +
+  geom_bar(stat="identity", aes(fill = Grade)) +   geom_errorbar(aes(ymin=AveTime-TimeSE, ymax=AveTime+TimeSE)) + labs(title="Average Time By Grade")
+timebarplot
+```
+
+
+
+It appears that there is no siginficant difference when it comes to average time among the grades.  Even the error bars were hardly a blip on the plot.  
+Below is a box plot:
+
+```{r}
+timebox <- ggplot(XCData, aes(x=Grade, y=Time)) + 
+  geom_boxplot(outlier.colour="black", outlier.shape=8, aes(fill = Grade)) +
+  geom_jitter(alpha = .1)
+timebox
+```
+
+
+Once again, very similar.
+
+Lets now move to the statistical tests to confirm what I believe these plots already indicate: that there is no statistically significant difference in performance among the grades.
+
+Now, I want to use lm() to fit a linear model and run the ANOVA.  But before I actually run the ANOVA, I must check my assumptions.  
+
+```{r}
+LinearPlace <- lm(Place ~ Grade, data = XCData)
+plot(LinearPlace)
+```
+
+You can clearly see that this data fails to meet the assumption that the residuals are normally distributed.  Of course, I could have already predicted that because I am looking at ordinal data.  Fortunately, there is another test I can run in place of the ANOVA.  That is the Kruskal-Wallis test, a non-parametric alternative to the one-way ANOVA.
+
+```{r}
+kruskal.test(Place ~ Grade, data = XCData)
+```
+
+
+Looking at my p-value of 0.07, it appears that at a 95% significance level there is no statistically significant difference in place based on grade.  However, to take a closer look at individual groups, I will run a pairwise wilcoxon test.  
+
+```{r}
+pairwise.wilcox.test(XCData$Place, XCData$Grade,
+                 p.adjust.method = "BH")
+```
+
+Looking at the results, I once again see that at a 95% significance level, there is no statistically significant difference between any of the groups. 
+It's interesting to note that The p-value comparing the Sophomores and Freshman was nearly significant, but still missed the mark.  This makes sense because looking at the average place, Freshman on average placed the lowest (at 110) and Sophomores placed the highest (at 103).
+
+Now, I will run the same tests looking at Time.  First, I will use lm() to fit a linear model:
+
+```{r}
+LinearTime <- lm(Time ~ Grade, data = XCData)
+
+```
+
+Before I run the ANOVA, I first need to make sure the residuals are normally distributed with equal variances:
+
+```{r}
+plot(LinearTime)
+```
+
+This plot shows that the residuals are much more normally distributed.  This is a bit of a divergence at the top, but it is not so serious that we cannot run the ANOVA:
+
+```{r}
+anova(LinearTime)
+```
+
+With a p-value of 0.1362, it does not appear that at a 95% significance level there is a stastistically significant difference in time between grades.  Though, based on my bar plots, I already expected that result.  I will go ahead and run a Tukey test to take a closer look at the difference between groups.
+
+```{r}
+TukeyHSD(aov(Time ~ Grade, data = XCData))
+```
+
+As we already knew, at a 95% significance level, there is no significant difference between any of the groups.  The closest we came to a significant difference was once again between the Freshman and Sophomores.  However, it was further from being significant than evaluating the groups based on Place.
+
+### Overall Thoughts
+In my introduction, I implied that that it would be unlikely that we would see a consistent pattern of improvment from Freshman, to Sophomore, to Junior, to Senior year. However, I honestly wasn't expecting to see that there was no statistical difference at all comparing the performance at each grade level.
+
+### Looking Forward
+In my introduction, I stated that I chose to focus on girls because I knew that it would be unlikely that we would see a consistent pattern of impovment from Freshman to Senior year.  I hypothesized that boys would show that more traditional pattern of improvement.  So, if I had time I would have liked to run these same analyses on the boys results.  
+
+I could also look at my data based on year.  That could potentially be interesting because I could see how the data would evolve if there were a particularly strong class (say if the Class of 2015 consistently outperformed other classes regardless of their year in school.)
+
+Another addition to this study would be to run these tests on the other divisions (A and AA). It would be interesting to see if school size truly did impact the students that earned the right to compete at the State meet.
+
+I do plan on continuing work on this project and will be adding those elements in the future.
+
+
