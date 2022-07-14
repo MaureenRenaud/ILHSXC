@@ -1,0 +1,85 @@
+---
+title: "ILHSXC"
+author: "Maureen Renaud"
+date: '2022-07-14'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Illinois High School Cross-Country
+
+Review of Illinois HS XC and Track
+
+### Importing the data
+
+The data for this project was obtained from www.ihsa.org.
+The data for each race was copied onto a page in an Excel workbook.  This workbook, titled "ILHSXC" contains all of the results for each race (broken down by year, gender, and division) from 1996 to present day.
+
+Using the packages "readxl" and "tidyverse", I was able to import all pages from this workbook into one data.
+
+```{r}
+library("readxl")
+library("tidyverse")
+
+#Reading in all sheets from the Excel Spreadsheet
+
+path <- "ILHSXC.xlsx"
+all_data <- path %>% excel_sheets() %>%
+            set_names() %>%
+            map_dfr(read_excel, path = path)
+```
+
+An initial look at the summary shows us that we need to clean up some of our variables so that they can be appropriately analyzed.
+
+```{r}
+summary(all_data)
+```
+
+
+The first step is to transform some of the character variables to factors.  This will enable us to use these variable as categorical variables in our statistical models.
+First, I will convert 'Grade' to a factor containing Freshman, Sophomore, Junior, and Senior. Prior to uploading this data set, there was a fairly large number of results containing no grade.  I was able to fill in many of these by looking at previous years results, results from other races, and googling the name.  Unfortunately, there were still five entries that I could not find information on.  
+When it comes to statistical analysis based on grade, I will have to eliminate these rows.  Fortunately, these five entries are equal to 0.02% of the total data set of 26654 entries and thus will not have a significant impact on the results.
+
+```{r}
+# Convert Grade To A Factor
+#Analyze NAs for Grade 
+all_data$Grade <- factor(all_data$Grade, levels = c("Fr", "So", "Jr", "Sr"))
+all_data[which(is.na(all_data[ , 8])),]
+```
+
+Next, I will convert Gender, Division, and Year to factors.  Fortunately, I do not have any missing data for these factors.
+
+```{r}
+#Convert Gender to A Factor
+all_data$Gender <- factor(all_data$Gender, levels = c("Female", "Male"))
+
+#Convert Division to A Factor
+all_data$Division <- factor(all_data$Division, levels = c("A", "AA", "1A", "2A", "3A"))
+
+#Convert Year to a factor
+all_data$Year <- as.factor(all_data$Year)
+```
+
+
+```{r}
+
+XCData[,3] <- sapply(strsplit(XCData[,3],":"),
+        function(x) {
+             x <- as.numeric(x)
+             x[1]+x[2]/60
+         }
+  )
+```
+
+## EDA
+
+
+
+```{r echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
